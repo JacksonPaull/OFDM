@@ -28,13 +28,16 @@ def probability_of_bit_error(sent_bits: np.array,
     assert len(sent_bits) == len(received_bits)
     return np.sum(sent_bits != received_bits) / len(sent_bits)
 
-def encode_2PAM(bits: np.array):
-        return 2*(bits-0.5)
+def encode_2PAM(bits: np.array, Es=1):
+        d = 2*np.sqrt(Es)
+        return (bits-0.5) * d
 
-def encode_QPSK(bits: np.array):
+def encode_QPSK(bits: np.array, Es=1):
     assert len(bits) % 2 == 0
     bits = bits.reshape((-1,2))
-    return 2*(bits-0.5) @ np.array([1, 1j])
+
+    # Multiplied by 2 Es to account for energy in both dimensions
+    return (bits-0.5) @ np.array([1, 1j]) * np.sqrt(Es) * 2
 
 
 def decode_2PAM(symbols):
