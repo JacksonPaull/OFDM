@@ -21,12 +21,12 @@ def generate_bits(N, ret='array'):
 def probability_of_symbol_error(sent_symbols: np.array, 
                                 received_symbols: np.array):
     assert len(sent_symbols) == len(received_symbols)
-    return np.sum(sent_symbols != received_symbols) / len(sent_symbols)
+    return np.mean(sent_symbols != received_symbols)
 
 def probability_of_bit_error(sent_bits: np.array, 
                              received_bits: np.array):
     assert len(sent_bits) == len(received_bits)
-    return np.sum(sent_bits != received_bits) / len(sent_bits)
+    return np.mean(sent_bits != received_bits)
 
 def construct_P(p, N):
     P = toeplitz(np.concatenate((p, np.zeros(N-1))), np.concatenate((p[0:1], np.zeros(N-1))))
@@ -58,4 +58,4 @@ def db_to_lin(x):
     return 10**(x/10)
 
 def pe_to_snr(pe):
-    return invQfunc(pe /2) ** 2
+    return invQfunc(pe) ** 2

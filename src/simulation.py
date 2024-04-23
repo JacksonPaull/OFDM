@@ -7,10 +7,6 @@ from tqdm import trange
 
 import numpy as np
 
-# TODO: Decouple bit generation -> symbol encoding -> transmitter
-# works out nicely with N = bits / block in this example, but won't work generally
-# with encoding schemes other than 4QAM
-
 def main(snr, 
          N, 
          V, 
@@ -31,7 +27,7 @@ def main(snr,
         tx_signal = transmitter(bits_sent)
         
         # Pass through channel
-        signal = np.convolve(tx_signal, H, 'same')
+        signal = np.convolve(tx_signal, H, 'full')[:len(tx_signal)]
 
         # Add AWGN noise
         # TODO
