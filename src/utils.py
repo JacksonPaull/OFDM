@@ -28,26 +28,6 @@ def probability_of_bit_error(sent_bits: np.array,
     assert len(sent_bits) == len(received_bits)
     return np.sum(sent_bits != received_bits) / len(sent_bits)
 
-def encode_2PAM(bits: np.array, Es=1):
-        d = 2*np.sqrt(Es)
-        return (bits-0.5) * d
-
-def encode_QPSK(bits: np.array, Es=1):
-    assert len(bits) % 2 == 0
-    bits = bits.reshape((-1,2))
-
-    # Multiplied by 2 Es to account for energy in both dimensions
-    return (bits-0.5) @ np.array([1, 1j]) * np.sqrt(Es) * 2
-
-
-def decode_2PAM(symbols):
-        # ML Detection
-        return (symbols > 0).astype(int)
-
-def decode_QPSK(symbols):
-    bits = np.apply_along_axis(lambda s: np.array([np.real(s) > 0, np.imag(s) > 0]), 0, symbols).astype(int)
-    return bits.T.flatten()
-
 def construct_P(p, N):
     P = toeplitz(np.concatenate((p, np.zeros(N-1))), np.concatenate((p[0:1], np.zeros(N-1))))
     return P
