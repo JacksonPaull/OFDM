@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import toeplitz
 from scipy import special
 
-def generate_bits(N, ret='array'):
+def generate_bits(N, ret='array', p=0.5):
     """
     Generate N random bits with an equal probability of 0s and 1s.
 
@@ -10,7 +10,7 @@ def generate_bits(N, ret='array'):
     itself will have roughly equal bit probability
     """
 
-    bits = np.array([1 if np.random.rand() < 0.5 else 0 for _ in range(N)])
+    bits = np.array([1 if np.random.rand() < p else 0 for _ in range(N)])
     if ret == 'array':
         return bits
     elif ret == 'string' or ret == 'str':
