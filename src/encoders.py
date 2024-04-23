@@ -1,5 +1,6 @@
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Encoder():
     def __init__(self):
@@ -31,8 +32,26 @@ class MPAM(Encoder):
     def decode_symbols(self, symbols):
         return (symbols > 0).astype(int)
 
-    def plot_constellation(self,):
-        pass
+    def plot_constellation(self, fw=5, fh=5, show=True):
+        fig, ax = plt.subplots()
+        fig.set_figwidth(fw)
+        fig.set_figheight(fh)
+        b = np.array([0, 1])
+        symbols = self.encode_bits(b)
+
+        x, y = np.real(symbols), np.imag(symbols)
+        ax.scatter(symbols, symbols)
+
+        ax.grid(True, ls='--')
+
+        for i, bits in enumerate(b):
+            ax.annotate(bits, x[i], y[i])
+        
+        if show:
+            fig.show()
+            return
+        
+        return fig, ax
 
     def plot_decoding(self,):
         # Plot a decoding of the constellation into the relevant bits
@@ -51,7 +70,7 @@ class MQAM(Encoder):
         bits = bits.reshape((-1,2))
 
         # Multiplied by 2 Es to account for energy in both dimensions
-        return (bits-0.5) @ np.array([1, 1j]) * 2
+        return (bits-0.5) @ np.array([1, 1j]) * np.sqrt(2)
 
     def decode_symbols(self, symbols):
         bits = np.apply_along_axis(lambda s: np.array([np.real(s) > 0, np.imag(s) > 0]), 0, symbols).astype(int)
