@@ -12,6 +12,8 @@ def waterfill_alloc(gains: np.array,
         gains: np.array
             An array containing each individual channel gain, the order does not matter
     
+        P_tot: The total energy to be divided among the channels
+        gap: Shannon gap related to required probability of error
     """
     idx = np.arange(len(gains))
     a = np.row_stack((idx, gains))

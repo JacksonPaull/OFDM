@@ -37,10 +37,8 @@ def main(snr,
         signal_power = np.mean(np.abs(signal) ** 2)
         noise_variance = signal_power * 10 ** (-snr/10)
 
-        # TODO
-        # Should this noise be complex or real?
-        noise = np.sqrt(noise_variance/2)*(np.random.randn(*signal.shape)
-                                           +1j*np.random.randn(*signal.shape))
+        # Add Real Noise
+        noise = np.sqrt(noise_variance/2)*np.random.randn(*signal.shape)
         noisy_signal = signal + noise
 
         # Pass through receiver
