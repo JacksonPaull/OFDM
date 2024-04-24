@@ -18,6 +18,8 @@ def generate_bits(N, ret='array', p=0.5):
     else:
          raise ValueError(f"Invalid return type '{ret}' requested. Valid types are 'array' and 'string'")
 
+# Note that Probability of symbol error and bit error share implementation,
+# They are separated for readability 
 def probability_of_symbol_error(sent_symbols: np.array, 
                                 received_symbols: np.array):
     assert len(sent_symbols) == len(received_symbols)
