@@ -27,7 +27,7 @@ def probability_of_symbol_error(sent_symbols: np.array,
 
 def probability_of_bit_error(sent_bits: np.array, 
                              received_bits: np.array):
-    assert len(sent_bits) == len(received_bits)
+    assert len(sent_bits) == len(received_bits), f'Number of bits sent ({len(sent_bits)}) != Number of bits received ({len(received_bits)})'
     return np.mean(sent_bits != received_bits)
 
 def construct_P(p, N):
@@ -35,17 +35,20 @@ def construct_P(p, N):
     return P
 
 def P_to_Pofdm(P):
-    # P = (N+L, N)
-    L, N = P.shape
-    L -= N 
+    L, N = P.shape # P is (N+L x N)
+    L = L - N
 
     arrs = [P[N:, :]]
-    for _ in range(N-1):
-        arrs.append(np.zeros(arrs[0].shape))
+    for _ in range(N-L):
+        arrs.append(np.zeros((1,N)))
 
     Pofdm = P[:N,:] + np.row_stack(arrs)
 
     return Pofdm
+
+def construct_Pofdm(p, N):
+    P = construct_P(p, N)
+    return P_to_Pofdm(P)
 
 def invQfunc(x):
     return np.sqrt(2)*special.erfinv(1-2*x)

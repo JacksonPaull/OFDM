@@ -14,12 +14,13 @@ def main(noise_variance,
          N, 
          v, 
          chanel_response, 
-         packets):
+         packets,
+         energy):
+    
     h = chanel_response # named to get around argparse help option
-    mag_h = h @ h
-    transmitter = OFDM.OFDM_transmitter(v)
-    receiver = OFDM.OFDM_receiver(v, h, N)
-    Q = np.convolve(h, np.conj(h[::-1]))
+
+    receiver = OFDM.OFDM_receiver(v, h, N, energy)
+    transmitter = OFDM.OFDM_transmitter(N, v, receiver.opt_tx_power)
 
     # Create bits
     N_bits = packets * N
@@ -29,15 +30,14 @@ def main(noise_variance,
     # For each block symbol
     for i in (window := trange(packets)):
         # Pass through transmitter
-        bits_sent = bits[N*i:N*i+N]
+        bits_sent = bits[N*i:N*(i+1)]
         tx_signal = transmitter(bits_sent)
         
         # Pass through channel
-        signal = np.convolve(tx_signal, Q, 'full')[len(h)-1:1-len(h)]
+        signal = np.convolve(tx_signal, h)[:-len(h)+1]
 
         # Add AWGN noise
         noise = np.sqrt(noise_variance/2) * (np.random.randn(*signal.shape))
-        noise = np.convolve(noise, h[::-1]/np.sqrt(mag_h))[:-len(h)+1]
         noisy_signal = signal + noise
 
         # Pass through receiver
@@ -56,6 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--packets', default=1000, type=int)
     parser.add_argument('-n', '--noise_variance', default=0.2, type=float)
     parser.add_argument('-c', '--chanel_response', default=np.array([1, 1]), nargs='+', type=float)
+    parser.add_argument('-E', '--energy', default=1, type=float)
 
     args = vars(parser.parse_args())
     args['chanel_response'] = np.array(args['chanel_response'], dtype=float)
