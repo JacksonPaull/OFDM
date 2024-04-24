@@ -14,10 +14,13 @@ def waterfill_alloc(gains: np.array,
     
         P_tot: The total energy to be divided among the channels
         gap: Shannon gap related to required probability of error
+
+    Returns:
+        An optimal power allocation along subchannels (maintaining order of channels when outputting)
     """
     idx = np.arange(len(gains))
-    a = np.row_stack((idx, gains))
-    gains, idx = a[a[1,:].argsort()] # Sort the gains and the index
+    a = np.column_stack((idx, gains))
+    idx, gains = a[a[:,1].argsort()].T # Sort the gains and the index
 
     n = 0
     g_inv = gap/gains

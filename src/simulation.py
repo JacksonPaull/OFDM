@@ -12,12 +12,14 @@ import numpy as np
 
 def main(noise_variance, 
          N, 
-         V, 
-         H, 
+         v, 
+         chanel_response, 
          packets):
-    transmitter = OFDM.OFDM_transmitter(V)
-    receiver = OFDM.OFDM_receiver(V, H, N)
-    Q = np.convolve(H, np.conj(H[::-1]))
+    h = chanel_response # named to get around argparse help option
+    mag_h = h @ h
+    transmitter = OFDM.OFDM_transmitter(v)
+    receiver = OFDM.OFDM_receiver(v, h, N)
+    Q = np.convolve(h, np.conj(h[::-1]))
 
     # Create bits
     N_bits = packets * N
@@ -31,10 +33,11 @@ def main(noise_variance,
         tx_signal = transmitter(bits_sent)
         
         # Pass through channel
-        signal = np.convolve(tx_signal, Q, 'full')[len(H)-1:1-len(H)]
+        signal = np.convolve(tx_signal, Q, 'full')[len(h)-1:1-len(h)]
 
         # Add AWGN noise
-        noise = np.sqrt(noise_variance/2)*np.random.randn(*signal.shape)
+        noise = np.sqrt(noise_variance/2) * (np.random.randn(*signal.shape))
+        noise = np.convolve(noise, h[::-1]/np.sqrt(mag_h))[:-len(h)+1]
         noisy_signal = signal + noise
 
         # Pass through receiver
@@ -49,13 +52,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='OFDM Simulation',
                                      description='Perform simulated OFDM transmission over an AWGN channel')
     parser.add_argument('-N', default=16, type=int)
-    parser.add_argument('-V', default=2, type=int)
+    parser.add_argument('-v', default=2, type=int)
     parser.add_argument('-p', '--packets', default=1000, type=int)
     parser.add_argument('-n', '--noise_variance', default=0.2, type=float)
-    parser.add_argument('-H', default=np.array([1, 1]), nargs='+', type=float)
+    parser.add_argument('-c', '--chanel_response', default=np.array([1, 1]), nargs='+', type=float)
 
     args = vars(parser.parse_args())
-    args['H'] = np.array(args['H'], dtype=float)
+    args['chanel_response'] = np.array(args['chanel_response'], dtype=float)
     pe = main(**args)
     snr = utils.pe_to_snr(pe)
     snr = utils.lin_to_db(snr)
