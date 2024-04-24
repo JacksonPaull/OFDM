@@ -44,8 +44,39 @@ class Encoder():
         
         return fig, ax
 
-    def plot_decoding(self):
+    def plot_decoding(self, symbols, fsize=(5,5), show=True):
         # Plot a decoding of the constellation into the relevant bits
+        fw, fh = fsize
+        fig, ax = plt.subplots()
+        fig.suptitle(f'{self.name} Constellation (assume gray coding)')
+        fig.set_figwidth(fw)
+        fig.set_figheight(fh)
+        ax.set_xlabel('Real Part (I)')
+        ax.set_ylabel('Imaginary Part (Q)')
+        ax.grid(True, ls='--', lw=0.3)
+
+        # Construct sequence of all bits we need
+        bits = ''
+        symbol_len = np.log2(self.M)
+        for i in np.arange(self.M):
+            b = bin(i)[2:]
+            b = '0'*int(symbol_len-len(b)) + b
+            bits += b
+
+        x, y = np.real(symbols), np.imag(symbols)
+        ax.scatter(x, y, c='orange')
+
+        # Plot reference of constellation
+        symbols = self.encode_bits(np.array([int(i) for i in bits]))
+        x, y = np.real(symbols), np.imag(symbols)
+        for i, bits in enumerate(symbols):
+            ax.plot(x[i], y[i],'bo')
+            ax.text(x[i], y[i]+0.1, f'$X_{i}$', ha='center')
+        
+        if show:
+            fig.show()
+            return
+
         raise NotImplementedError()
 
 
@@ -95,16 +126,3 @@ class MQAM(Encoder):
     def decode_symbols(self, symbols):
         bits = np.apply_along_axis(lambda s: np.array([np.real(s) > 0, np.imag(s) > 0]), 0, symbols).astype(int)
         return bits.T.flatten()
-
-    def plot_constellation(self, fsize=(5,5), show=True):
-        fig, ax = super().plot_constellation(fsize, False)
-
-        if show:
-            fig.show()
-            return
-
-        return fig, ax
-
-    def plot_decoding(self,):
-        # Plot a decoding of the constellation into the relevant bits
-        pass

@@ -4,7 +4,6 @@ This file holds implementations for an OFDM transmitter receiver pair
 
 """
 from scipy.fft import fft, ifft
-import waterfilling
 import numpy as np
 import utils
 import encoders
@@ -35,6 +34,9 @@ class OFDM_transmitter():
         self.v = v
         self.pam = encoders.MPAM(2)
         self.qpsk = encoders.MQAM(4)
+        
+        if power_allocations == 'equal':
+            power_allocations = np.ones(self.N)
         self.power_allocations = power_allocations
         self.n_zero_power = (power_allocations == 0).sum()
         self.zp_idx = np.arange(N)[self.power_allocations == 0]
@@ -42,7 +44,7 @@ class OFDM_transmitter():
     def encode_bits(self, bits:np.array):
         assert(len(bits) == self.N - self.n_zero_power)
 
-        signal = np.zeros(self.N) + 0j
+        signal = np.zeros(self.N, dtype=np.complex128)
         b = 0
         for i in range(self.N//2 + 1): # For every channel index
             if i in [0, self.N//2] and i not in self.zp_idx:
@@ -52,6 +54,7 @@ class OFDM_transmitter():
             elif i not in self.zp_idx:
                 signal[i] = self.qpsk.encode_bits(bits[[b, b+1]]).squeeze()
                 b += 2
+        assert(b == len(bits)), 'Not all bits were consumed'
 
         # Note: Because there are exactly as many bits as should be transmitted, and the nyquist is encoded last
         #       We are left with the nice property that the "real" bits in the actual bitstream are those on the
@@ -91,7 +94,7 @@ class OFDM_receiver():
         ! stationary and known channel assumption (bad)
     """
     
-    def __init__(self, v, p, N, optimal_power):
+    def __init__(self, N, v, optimal_power, p):
         self.v = v
         self.N = N
 
@@ -101,6 +104,8 @@ class OFDM_receiver():
         self.pam = encoders.MPAM(2)
         self.qpsk = encoders.MQAM(4)
         
+        if optimal_power == 'equal':
+            optimal_power = np.ones(self.N)
         self.opt_tx_power = optimal_power
         self.n_zero_power = (self.opt_tx_power == 0).sum()
 
@@ -126,6 +131,7 @@ class OFDM_receiver():
             elif i not in self.zp_idx:
                 bits = bits + list(self.qpsk.decode_symbols(X[[i]]))
 
+        assert(len(bits) == self.N-self.n_zero_power), 'Not all bits were recovered'
 
         return np.array(bits)
 
@@ -137,6 +143,6 @@ class OFDM_receiver():
         b_hat = self.decode_bits(z_eq)              # estimate
 
         if return_cache:
-            return b_hat, {'x':x, 'z':z, 'z_eq':z,'b_hat':b_hat}
+            return b_hat, {'x':x, 'z':z, 'z_eq':z_eq,'b_hat':b_hat}
 
         return b_hat
