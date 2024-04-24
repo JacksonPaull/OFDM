@@ -71,11 +71,11 @@ class OFDM_receiver():
         # This is because im dividing by a complex value is I use H directly, and a real value with eigenvalues
         # Shouldn't dividing by the channel gain (abs) be sufficient...?
         
-        # P = utils.construct_P(H, N)
-        # Pofdm = utils.P_to_Pofdm(P)
-        # e = np.sort(np.abs(eigvals(Pofdm)))[::-1]
-        # self.eigvals = np.concatenate([e[[0]], e[1:N-1:2], e[[N-1]], e[N-2:1:-2]]) + 1e-10
-        self.eigvals = fft(H, N)+1e-10 # 1 tap frequency EQ, avoid  divide by 0
+        P = utils.construct_P(H, N)
+        Pofdm = utils.P_to_Pofdm(P)
+        e = np.sort(np.abs(eigvals(Pofdm)))[::-1]
+        self.eigvals = np.concatenate([e[[0]], e[1:N-1:2], e[[N-1]], e[N-2:1:-2]]) + 1e-10
+        #self.eigvals = fft(H, N)+1e-10 # 1 tap frequency EQ, avoid  divide by 0
         self.pam = encoders.MPAM(2)
         self.qpsk = encoders.MQAM(4)
 

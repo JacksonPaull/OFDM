@@ -1,4 +1,7 @@
+"""
+This problem contains an implementation of a simulation of an OFDM channel for homework 9 problem 4
 
+"""
 
 import utils
 import OFDM
@@ -7,13 +10,14 @@ from tqdm import trange
 
 import numpy as np
 
-def main(snr, 
+def main(noise_variance, 
          N, 
          V, 
          H, 
          packets):
     transmitter = OFDM.OFDM_transmitter(V)
     receiver = OFDM.OFDM_receiver(V, H, N)
+    Q = np.convolve(H, np.conj(H[::-1]))
 
     # Create bits
     N_bits = packets * N
@@ -27,19 +31,10 @@ def main(snr,
         tx_signal = transmitter(bits_sent)
         
         # Pass through channel
-        signal = np.convolve(tx_signal, H, 'full')[:len(tx_signal)]
+        signal = np.convolve(tx_signal, Q, 'full')[len(H)-1:1-len(H)]
 
         # Add AWGN noise
-        # TODO
-        # Should the noise variance be calculated here?
-        # I would think that it should be 0.2 based on the MFB, 
-        # but that feels too high given signal energy
-        signal_power = np.mean(np.abs(signal) ** 2)
-        noise_variance = signal_power * 10 ** (-snr/10)
-
-        # TODO
-        # Should this noise be complex or real?, it doesn't really change much but still
-        noise = np.sqrt(noise_variance/2)*(np.random.randn(*signal.shape))
+        noise = np.sqrt(noise_variance/2)*np.random.randn(*signal.shape)
         noisy_signal = signal + noise
 
         # Pass through receiver
@@ -56,7 +51,7 @@ if __name__ == '__main__':
     parser.add_argument('-N', default=16, type=int)
     parser.add_argument('-V', default=2, type=int)
     parser.add_argument('-p', '--packets', default=1000, type=int)
-    parser.add_argument('-s', '--snr', default=10.0, type=float)
+    parser.add_argument('-n', '--noise_variance', default=0.2, type=float)
     parser.add_argument('-H', default=np.array([1, 1]), nargs='+', type=float)
 
     args = vars(parser.parse_args())
