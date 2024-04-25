@@ -20,14 +20,11 @@ class OFDM_transmitter():
 
     def __init__(self, 
                  N,
-                 v,
-                 power_allocations):
+                 v):
         """
         Parameters:
             N: Number of subcarriers
             v: cycle_prefix length
-            power_allocations: power allocated to each subchannel
-                indexing is assumed to be done correctly 
         """
 
         self.N = N
@@ -35,34 +32,19 @@ class OFDM_transmitter():
         self.pam = encoders.MPAM(2)
         self.qpsk = encoders.MQAM(4)
         
-        if power_allocations == 'equal':
-            power_allocations = np.ones(self.N)
-        self.power_allocations = power_allocations
-        self.n_zero_power = (power_allocations == 0).sum()
-        self.zp_idx = np.arange(N)[self.power_allocations == 0]
-        
     def encode_bits(self, bits:np.array):
-        assert(len(bits) == self.N - self.n_zero_power)
-
+        assert(len(bits) == self.N) # An assumption dependent on using QPSK/2PAM
         signal = np.zeros(self.N, dtype=np.complex128)
-        b = 0
-        for i in range(self.N//2 + 1): # For every channel index
-            if i in [0, self.N//2] and i not in self.zp_idx:
-                # Real channel, consume 1 bit
-                signal[i] = self.pam.encode_bits(bits[b]).squeeze()
-                b += 1
-            elif i not in self.zp_idx:
-                signal[i] = self.qpsk.encode_bits(bits[[b, b+1]]).squeeze()
-                b += 2
-        assert(b == len(bits)), 'Not all bits were consumed'
-
-        # Note: Because there are exactly as many bits as should be transmitted, and the nyquist is encoded last
-        #       We are left with the nice property that the "real" bits in the actual bitstream are those on the
-        #       edge, and all other bits are complex symbol pairs that are right next to each other
         
+        real_symbols = self.pam.encode_bits(bits[:2])
+        complex_symbols = self.qpsk.encode_bits(bits[2:])
+        
+        signal[[0, self.N//2]] = real_symbols
+        signal[1:self.N//2] = complex_symbols
+
         # Enforce baseband complex conjugate
         signal[self.N//2+1:] = np.conj(signal[1:self.N//2])[::-1]
-        return signal # * self.power_allocations
+        return signal
 
     def add_cp(self, X):
         return np.concatenate([X[-self.v:], X])
@@ -94,22 +76,14 @@ class OFDM_receiver():
         ! stationary and known channel assumption (bad)
     """
     
-    def __init__(self, N, v, optimal_power, p):
+    def __init__(self, N, v, p):
         self.v = v
         self.N = N
 
         Pofdm = utils.construct_Pofdm(p, N)
-        e = np.diag(fft(np.eye(N)) @ Pofdm @ ifft(np.eye(N)))
-        self.eigvals = np.concatenate((e[N//2:], e[:N//2]))
+        self.eigvals = np.diag(fft(np.eye(N)) @ Pofdm @ ifft(np.eye(N)))
         self.pam = encoders.MPAM(2)
         self.qpsk = encoders.MQAM(4)
-        
-        if optimal_power == 'equal':
-            optimal_power = np.ones(self.N)
-        self.opt_tx_power = optimal_power
-        self.n_zero_power = (self.opt_tx_power == 0).sum()
-
-        self.zp_idx = np.arange(N)[self.opt_tx_power == 0]
 
 
     def remove_cp(self, X):
@@ -120,20 +94,11 @@ class OFDM_receiver():
     
     def decode_bits(self, X):
         assert len(X) == self.N
+        
+        real_bits = self.pam.decode_symbols(X[[0, self.N//2]])
+        complex_bits = self.qpsk.decode_symbols(X[1:self.N//2])
 
-
-        bits = []
-        for i in range(self.N//2 + 1): # For every channel index
-            if i in [0, self.N//2] and i not in self.zp_idx:
-                # Real channel, consume 1 bit
-                bits = bits + list(self.pam.decode_symbols(X[[i]]))
-
-            elif i not in self.zp_idx:
-                bits = bits + list(self.qpsk.decode_symbols(X[[i]]))
-
-        assert(len(bits) == self.N-self.n_zero_power), 'Not all bits were recovered'
-
-        return np.array(bits)
+        return np.concatenate((real_bits, complex_bits))
 
 
     def __call__(self, X, return_cache=False):

@@ -46,7 +46,7 @@ def plot_waterfilling_info(gains, energy, rates, show=True, fsize=(20,5)):
     ax.grid(True, ls='--', lw=0.7)
 
     if show:
-        fig.show()
+        plt.show()
         return
     
     return fig, axs
