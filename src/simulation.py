@@ -17,15 +17,13 @@ def main(noise_variance,
          packets):
     
     h = chanel_response # named to get around argparse help option
-    p = h
 
-    receiver = OFDM.OFDM_receiver(N, v, p)
+    receiver = OFDM.OFDM_receiver(N, v, h)
     transmitter = OFDM.OFDM_transmitter(N, v)
 
     # Create bits
     N_bits = packets * N
     bits = utils.generate_bits(N_bits)
-    # pe_mean = 0
 
     # For each block symbol
     bits_received = []
@@ -38,15 +36,13 @@ def main(noise_variance,
         signal = np.convolve(tx_signal, h)[:len(tx_signal)]
 
         # Add AWGN noise
-        noise = np.sqrt(noise_variance/2) * (np.random.randn(*signal.shape))
-        noisy_signal = signal #+ noise
+        noise = np.sqrt(noise_variance/N) * (np.random.randn(*signal.shape))
+        noisy_signal = signal + noise
 
         # Pass through receiver
         b_hat = receiver(noisy_signal)
         bits_received += list(b_hat)
-        # pe = utils.probability_of_bit_error(bits_sent, bits_received)
-        # pe_mean = pe_mean * (i/(i+1)) + pe/(i+1)
-        # window.set_description(f'Empirical Pe: {pe_mean*100:.2f}%')
+
     pe_mean = utils.probability_of_bit_error(bits, bits_received)
     return pe_mean
 
